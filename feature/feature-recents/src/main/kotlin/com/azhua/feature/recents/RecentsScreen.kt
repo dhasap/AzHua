@@ -1,5 +1,6 @@
 package com.azhua.feature.recents
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,9 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.azhua.core.ui.component.*
 import com.azhua.core.ui.theme.*
 import java.time.format.DateTimeFormatter
@@ -95,13 +99,14 @@ private fun RecentsContent(
                     items = state.continueWatching,
                     key = { "cw_${it.donghua.id}" },
                 ) { progress ->
+                    val episode = progress.lastEpisode ?: return@items
                     ContinueWatchingCard(
                         donghua = progress.donghua,
-                        episode = progress.lastEpisode ?: return@items,
+                        episode = episode,
                         progress = progress.progress,
                         timestamp = progress.lastWatchedAt,
                         onClick = {
-                            progress.lastEpisode?.let { ep -> onNavigateToPlayer(progress.donghua.id, ep.id) }
+                            onNavigateToPlayer(progress.donghua.id, episode.id)
                         },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     )
@@ -165,10 +170,10 @@ private fun NewEpisodeItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Mini cover
         AsyncImage(
             model = update.coverUrl,
             contentDescription = null,
@@ -211,6 +216,7 @@ private fun HistoryItemRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -237,7 +243,6 @@ private fun HistoryItemRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = ColorTextSecondary,
             )
-            // Progress bar
             LinearProgressIndicator(
                 progress = { item.progress },
                 modifier = Modifier

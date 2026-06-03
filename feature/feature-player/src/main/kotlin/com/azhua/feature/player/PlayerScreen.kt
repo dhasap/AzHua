@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,7 +32,6 @@ fun PlayerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val view = LocalView.current
 
-    // Force landscape + immersive mode, restore on dispose
     DisposableEffect(Unit) {
         val activity = view.context as? Activity
         val originalOrientation = activity?.requestedOrientation
@@ -47,9 +47,7 @@ fun PlayerScreen(
         }
 
         onDispose {
-            // Restore original orientation
             activity?.requestedOrientation = originalOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            // Show system bars
             if (window != null) {
                 WindowCompat.setDecorFitsSystemWindows(window, true)
                 WindowInsetsControllerCompat(window, view).apply {
@@ -70,7 +68,6 @@ fun PlayerScreen(
                 viewModel.onEvent(PlayerEvent.ToggleControls)
             }
     ) {
-        // Video content placeholder
         if (uiState.isBuffering) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
@@ -78,7 +75,6 @@ fun PlayerScreen(
             )
         }
 
-        // Controls overlay
         if (uiState.isControlsVisible && !uiState.isLocked) {
             PlayerControls(
                 state = uiState,
@@ -87,7 +83,6 @@ fun PlayerScreen(
             )
         }
 
-        // Lock overlay
         if (uiState.isLocked) {
             IconButton(
                 onClick = { viewModel.onEvent(PlayerEvent.ToggleLock) },
@@ -111,7 +106,6 @@ private fun PlayerControls(
     onBack: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -120,7 +114,7 @@ private fun PlayerControls(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, "Kembali", tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = Color.White)
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -138,7 +132,6 @@ private fun PlayerControls(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Center controls
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -172,14 +165,12 @@ private fun PlayerControls(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Bottom bar
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.Black.copy(alpha = 0.5f))
                 .padding(8.dp),
         ) {
-            // Progress bar - use onValueChangeFinished to avoid feedback loop
             var sliderPosition by remember { mutableFloatStateOf(0f) }
             var isDragging by remember { mutableStateOf(false) }
 
@@ -221,7 +212,6 @@ private fun PlayerControls(
                 )
             }
 
-            // Action buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

@@ -16,6 +16,11 @@ dependencyResolutionManagement {
 rootProject.name = "AzHua"
 
 // ========================
+// App Module
+// ========================
+include(":app")
+
+// ========================
 // Core Modules
 // ========================
 include(":core:core-common")

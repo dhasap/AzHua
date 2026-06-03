@@ -61,23 +61,24 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Save progress every 5 seconds during playback.
-     * This ensures progress is saved even if the app is killed.
-     */
     private fun startPeriodicProgressSave() {
         progressSaveJob = viewModelScope.launch {
             while (isActive) {
                 delay(5000)
-                saveCurrentProgress()
+                saveCurrentProgressSync()
             }
         }
     }
 
-    private fun saveCurrentProgress() {
+    /**
+     * Synchronous progress save - does NOT use viewModelScope.
+     * Called from periodic save and onCleared.
+     */
+    private fun saveCurrentProgressSync() {
         val state = _uiState.value
-        if (state.currentEpisode != null && state.positionMs > 0 && state.isPlaying) {
-            viewModelScope.launch {
+        if (state.currentEpisode != null && state.positionMs > 0) {
+            // Use runBlocking on saveScope to ensure save completes
+            saveScope.launch {
                 episodeRepository.updateWatchProgress(
                     episodeId = state.currentEpisode.id,
                     positionMs = state.positionMs,
@@ -113,8 +114,7 @@ class PlayerViewModel @Inject constructor(
                 _uiState.update { it.copy(playbackSpeed = event.speed) }
             }
             is PlayerEvent.PlayEpisode -> {
-                // Save progress for previous episode first
-                saveCurrentProgress()
+                saveCurrentProgressSync()
                 val ep = _uiState.value.episodeList.find { it.id == event.episodeId }
                 ep?.let {
                     _uiState.update { state ->
@@ -128,7 +128,7 @@ class PlayerViewModel @Inject constructor(
                 }
             }
             PlayerEvent.PlayNext -> {
-                saveCurrentProgress()
+                saveCurrentProgressSync()
                 val current = _uiState.value.currentEpisode ?: return
                 val next = _uiState.value.episodeList
                     .filter { it.episodeNumber > current.episodeNumber }
@@ -136,7 +136,7 @@ class PlayerViewModel @Inject constructor(
                 next?.let { onEvent(PlayerEvent.PlayEpisode(it.id)) }
             }
             PlayerEvent.PlayPrevious -> {
-                saveCurrentProgress()
+                saveCurrentProgressSync()
                 val current = _uiState.value.currentEpisode ?: return
                 val prev = _uiState.value.episodeList
                     .filter { it.episodeNumber < current.episodeNumber }
@@ -157,9 +157,17 @@ class PlayerViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         progressSaveJob?.cancel()
-        // Use non-cancellable scope to save final progress
-        saveScope.launch {
-            saveCurrentProgress()
+        // Save final progress using non-cancellable scope
+        val state = _uiState.value
+        if (state.currentEpisode != null && state.positionMs > 0) {
+            runBlocking {
+                episodeRepository.updateWatchProgress(
+                    episodeId = state.currentEpisode.id,
+                    positionMs = state.positionMs,
+                    isWatched = state.positionMs >= state.durationMs * 0.9,
+                )
+            }
         }
+        saveScope.cancel()
     }
 }

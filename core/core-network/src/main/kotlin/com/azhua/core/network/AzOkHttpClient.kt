@@ -1,5 +1,7 @@
 package com.azhua.core.network
 
+import com.azhua.core.network.interceptor.RateLimitInterceptor
+import com.azhua.core.network.interceptor.UserAgentInterceptor
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject

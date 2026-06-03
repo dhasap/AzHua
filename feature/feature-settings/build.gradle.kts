@@ -10,21 +10,21 @@ android {
     namespace = "com.azhua.feature.settings"
     compileSdk = 35
 
-    defaultConfig {{
+    defaultConfig {
         minSdk = 26
-    }}
+    }
 
-    compileOptions {{
+    compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }}
+    }
 
-    kotlinOptions {{
+    kotlinOptions {
         jvmTarget = "17"
-    }}
+    }
 }
 
-dependencies {{
+dependencies {
     // Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines)
@@ -61,4 +61,4 @@ dependencies {{
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.junit)
-}}
+}

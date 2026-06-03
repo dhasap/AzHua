@@ -2,7 +2,6 @@ package com.azhua.feature.extensions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.azhua.app.extension.ExtensionManager
 import com.azhua.core.model.Extension
 import com.azhua.core.model.ExtensionStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,9 +10,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ExtensionViewModel @Inject constructor(
-    private val extensionManager: ExtensionManager,
-) : ViewModel() {
+class ExtensionViewModel @Inject constructor() : ViewModel() {
 
     private val _uiState = MutableStateFlow<ExtensionUiState>(ExtensionUiState.Loading)
     val uiState: StateFlow<ExtensionUiState> = _uiState.asStateFlow()
@@ -26,29 +23,30 @@ class ExtensionViewModel @Inject constructor(
 
     private fun loadExtensions() {
         viewModelScope.launch {
-            try {
-                extensionManager.initialize()
+            // TODO: Inject ExtensionManager when extension system is integrated
+            // For now, show available extensions from hardcoded data
+            val available = listOf(
+                ExtensionItem(
+                    extension = Extension(
+                        id = "anichin",
+                        name = "Anichin",
+                        packageName = "com.azhua.ext.anichin",
+                        versionName = "2.0.0",
+                        versionCode = 2,
+                        lang = "id",
+                        baseUrl = "https://anichin.moe",
+                        isInstalled = false,
+                    ),
+                    status = ExtensionStatus.AVAILABLE,
+                ),
+            )
 
-                combine(
-                    extensionManager.installedExtensions,
-                    extensionManager.availableExtensions,
-                    extensionManager.updatableExtensions,
-                    _activeTab,
-                ) { installed, available, updatable, tab ->
-                    ExtensionUiState.Success(
-                        installed = installed,
-                        available = available,
-                        updatable = updatable,
-                        activeTab = tab,
-                    ) as ExtensionUiState
-                }.catch { e ->
-                    emit(ExtensionUiState.Error(e.message ?: "Unknown error"))
-                }.collect { state ->
-                    _uiState.value = state
-                }
-            } catch (e: Exception) {
-                _uiState.value = ExtensionUiState.Error(e.message ?: "Failed to load extensions")
-            }
+            _uiState.value = ExtensionUiState.Success(
+                installed = emptyList(),
+                available = available,
+                updatable = emptyList(),
+                activeTab = _activeTab.value,
+            )
         }
     }
 
@@ -62,40 +60,16 @@ class ExtensionViewModel @Inject constructor(
                 }
             }
             is ExtensionEvent.Install -> {
-                viewModelScope.launch {
-                    _uiState.update {
-                        if (it is ExtensionUiState.Success) {
-                            it.copy(installed = it.installed.map { item ->
-                                if (item.extension.id == event.extensionId) item.copy(isLoading = true) else item
-                            })
-                        } else it
-                    }
-                    extensionManager.installExtension(event.extensionId)
-                    loadExtensions()
-                }
+                // TODO: Implement install via ExtensionManager
             }
             is ExtensionEvent.Uninstall -> {
-                viewModelScope.launch {
-                    extensionManager.uninstallExtension(event.extensionId)
-                    loadExtensions()
-                }
+                // TODO: Implement uninstall via ExtensionManager
             }
             is ExtensionEvent.Update -> {
-                viewModelScope.launch {
-                    extensionManager.installExtension(event.extensionId)
-                    loadExtensions()
-                }
+                // TODO: Implement update via ExtensionManager
             }
             ExtensionEvent.UpdateAll -> {
-                viewModelScope.launch {
-                    val current = _uiState.value
-                    if (current is ExtensionUiState.Success) {
-                        current.updatable.forEach { item ->
-                            extensionManager.installExtension(item.extension.id)
-                        }
-                        loadExtensions()
-                    }
-                }
+                // TODO: Implement update all
             }
             ExtensionEvent.Retry -> {
                 _uiState.value = ExtensionUiState.Loading

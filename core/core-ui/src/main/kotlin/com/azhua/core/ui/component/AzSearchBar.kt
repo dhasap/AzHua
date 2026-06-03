@@ -1,6 +1,7 @@
 package com.azhua.core.ui.component
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -85,12 +86,10 @@ fun AzSearchBar(
             containerColor = ColorSurfaceContainerHigh,
         ),
     ) {
-        // Search suggestions and recent searches
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(16.dp),
         ) {
-            // Recent searches
             if (recentSearches.isNotEmpty() && query.isEmpty()) {
                 item {
                     Text(
@@ -126,7 +125,6 @@ fun AzSearchBar(
                 }
             }
 
-            // Suggestions
             if (suggestions.isNotEmpty()) {
                 item {
                     Text(

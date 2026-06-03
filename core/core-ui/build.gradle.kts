@@ -38,13 +38,14 @@ dependencies {
     implementation(libs.compose.material.icons.extended)
     implementation(libs.compose.foundation)
     implementation(libs.compose.animation)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
     debugImplementation(libs.compose.ui.tooling)
 
     // Coil
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+
+    // Project modules
+    implementation(project(":core:core-model"))
 
     // Testing
     testImplementation(libs.junit)
