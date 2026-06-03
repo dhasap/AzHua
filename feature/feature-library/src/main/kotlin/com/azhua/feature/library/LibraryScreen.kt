@@ -1,29 +1,18 @@
 package com.azhua.feature.library
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.LocalLibrary
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -39,7 +28,6 @@ fun LibraryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showSortMenu by remember { mutableStateOf(false) }
-    var showFilterMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -60,8 +48,7 @@ fun LibraryScreen(
                         IconButton(onClick = {
                             viewModel.onEvent(LibraryEvent.RemoveFromLibrary(state.selectedDonghuaIds))
                         }) {
-                            // Delete icon
-                            Text("🗑️")
+                            Text("\uD83D\uDDD1\uFE0F")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = ColorSurface),
@@ -146,6 +133,11 @@ fun LibraryScreen(
     }
 }
 
+/**
+ * Library content using a single LazyColumn.
+ * Grid is simulated by placing items in rows (manual grid layout).
+ * This avoids nesting LazyVerticalStaggeredGrid inside LazyColumn.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LibraryContent(
@@ -157,7 +149,9 @@ private fun LibraryContent(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {
+        // ========================
         // Continue Watching Section
+        // ========================
         if (state.continueWatching.isNotEmpty()) {
             item(key = "continue_header") {
                 Text(
@@ -176,9 +170,10 @@ private fun LibraryContent(
                         items = state.continueWatching,
                         key = { it.donghua.id },
                     ) { progress ->
+                        val episode = progress.lastEpisode ?: return@items
                         ContinueWatchingCard(
                             donghua = progress.donghua,
-                            episode = progress.lastEpisode ?: return@items,
+                            episode = episode,
                             progress = progress.progress,
                             timestamp = progress.lastWatchedAt,
                             onClick = { onNavigateToDetail(progress.donghua.id) },
@@ -190,7 +185,9 @@ private fun LibraryContent(
             }
         }
 
+        // ========================
         // Search Bar (when active)
+        // ========================
         if (state.isSearchActive) {
             item(key = "search_bar") {
                 OutlinedTextField(
@@ -224,7 +221,9 @@ private fun LibraryContent(
             }
         }
 
+        // ========================
         // Filter Chips
+        // ========================
         item(key = "filter_chips") {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -241,11 +240,14 @@ private fun LibraryContent(
             }
         }
 
-        // Category Sections
+        // ========================
+        // Category Sections with Grid
+        // ========================
         state.categories.forEach { categoryWithDonghua ->
             val category = categoryWithDonghua.category
             val isExpanded = category.id in state.expandedCategoryIds
 
+            // Sticky header for category
             stickyHeader(key = "header_${category.id}") {
                 CategoryHeader(
                     category = category,
@@ -255,42 +257,53 @@ private fun LibraryContent(
                 )
             }
 
+            // Grid items - manual grid layout to avoid nesting lazy layouts
             if (isExpanded && categoryWithDonghua.donghuaList.isNotEmpty()) {
-                item(key = "grid_${category.id}") {
-                    // Staggered Grid
-                    val columns = StaggeredGridCells.Fixed(state.gridColumns)
-                    LazyVerticalStaggeredGrid(
-                        columns = columns,
+                val columns = state.gridColumns
+                val donghuaList = categoryWithDonghua.donghuaList
+                val rows = (donghuaList.size + columns - 1) / columns
+
+                items(
+                    count = rows,
+                    key = { "row_${category.id}_$it" },
+                ) { rowIndex ->
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 2000.dp) // Prevent nested scroll issues
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalItemSpacing = 8.dp,
                     ) {
-                        items(
-                            items = categoryWithDonghua.donghuaList,
-                            key = { it.id },
-                        ) { donghua ->
-                            val isSelected = donghua.id in state.selectedDonghuaIds
-                            DonghuaCard(
-                                donghua = donghua,
-                                onClick = {
-                                    if (state.isMultiSelectMode) {
-                                        viewModel.onEvent(LibraryEvent.DonghuaSelected(donghua.id))
-                                    } else {
-                                        onNavigateToDetail(donghua.id)
-                                    }
-                                },
-                                onLongClick = {
-                                    viewModel.enableMultiSelect(donghua.id)
-                                },
-                                modifier = Modifier.then(
-                                    if (isSelected) Modifier.padding(2.dp) else Modifier
-                                ),
-                            )
+                        for (colIndex in 0 until columns) {
+                            val itemIndex = rowIndex * columns + colIndex
+                            if (itemIndex < donghuaList.size) {
+                                val donghua = donghuaList[itemIndex]
+                                val isSelected = donghua.id in state.selectedDonghuaIds
+
+                                DonghuaCard(
+                                    donghua = donghua,
+                                    onClick = {
+                                        if (state.isMultiSelectMode) {
+                                            viewModel.onEvent(LibraryEvent.DonghuaSelected(donghua.id))
+                                        } else {
+                                            onNavigateToDetail(donghua.id)
+                                        }
+                                    },
+                                    onLongClick = {
+                                        viewModel.enableMultiSelect(donghua.id)
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .then(
+                                            if (isSelected) Modifier.padding(2.dp) else Modifier
+                                        ),
+                                )
+                            } else {
+                                // Empty spacer for incomplete rows
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
