@@ -1,8 +1,6 @@
 package com.azhua.core.ui.animation
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -10,8 +8,7 @@ import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
 
 /**
- * Shared element transition for cover art images.
- * Used when navigating from grid to detail screen.
+ * Animated cover image with scale-in effect.
  */
 @Composable
 fun SharedCoverImage(
@@ -21,18 +18,17 @@ fun SharedCoverImage(
     contentScale: ContentScale = ContentScale.Crop,
     animate: Boolean = true,
 ) {
-    var scale by remember { mutableFloatStateOf(1f) }
+    val scale = remember { Animatable(0.8f) }
 
-    LaunchedEffect(animate) {
+    LaunchedEffect(imageUrl) {
         if (animate) {
-            scale = 0.8f
-            animate(
-                initialValue = 0.8f,
+            scale.snapTo(0.8f)
+            scale.animateTo(
                 targetValue = 1f,
                 animationSpec = tween(400, easing = FastOutSlowInEasing),
-            ) { value, _ ->
-                scale = value
-            }
+            )
+        } else {
+            scale.snapTo(1f)
         }
     }
 
@@ -40,8 +36,8 @@ fun SharedCoverImage(
         model = imageUrl,
         contentDescription = contentDescription,
         modifier = modifier.graphicsLayer {
-            scaleX = scale
-            scaleY = scale
+            scaleX = scale.value
+            scaleY = scale.value
         },
         contentScale = contentScale,
     )

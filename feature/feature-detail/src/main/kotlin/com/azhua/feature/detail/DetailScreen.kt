@@ -295,7 +295,8 @@ private fun DetailContent(
             }
 
             // Episode List
-            val filteredEpisodes = state.episodes.let { eps ->
+            val filteredEpisodes = remember(state.episodes, state.episodeFilter, state.episodeSortOrder, state.searchQuery) {
+            state.episodes.let { eps ->
                 val filtered = when (state.episodeFilter) {
                     EpisodeFilter.ALL -> eps
                     EpisodeFilter.UNWATCHED -> eps.filter { !it.isWatched }
@@ -308,6 +309,7 @@ private fun DetailContent(
                     EpisodeSortOrder.NEWEST -> searched.sortedByDescending { it.episodeNumber }
                     EpisodeSortOrder.OLDEST -> searched.sortedBy { it.episodeNumber }
                 }
+            }
             }
 
             items(

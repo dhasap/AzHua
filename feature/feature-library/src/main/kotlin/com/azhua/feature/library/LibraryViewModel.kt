@@ -19,16 +19,21 @@ class LibraryViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow("")
     private val _isSearchActive = MutableStateFlow(false)
-    private val _expandedCategoryIds = MutableStateFlow(setOf<Long>(1L)) // Default expand first
+    private val _expandedCategoryIds = MutableStateFlow(setOf<Long>(1L))
     private val _selectedDonghuaIds = MutableStateFlow(setOf<Long>())
     private val _isMultiSelectMode = MutableStateFlow(false)
     private val _filter = MutableStateFlow(LibraryFilter())
     private val _gridColumns = MutableStateFlow(2)
-    private val _error = MutableStateFlow<String?>(null)
 
-    val uiState: StateFlow<LibraryUiState> = combine(
+    // Combine in smaller groups to avoid fragile positional indexing
+    private val dataFlow = combine(
         donghuaRepository.getLibraryDonghua(),
         episodeRepository.getContinueWatching(),
+    ) { donghuaList, continueWatchingEpisodes ->
+        Pair(donghuaList, continueWatchingEpisodes)
+    }
+
+    private val uiConfigFlow = combine(
         _searchQuery,
         _isSearchActive,
         _expandedCategoryIds,
@@ -36,40 +41,30 @@ class LibraryViewModel @Inject constructor(
         _isMultiSelectMode,
         _filter,
         _gridColumns,
-        _error,
-    ) { values ->
-        @Suppress("UNCHECKED_CAST")
-        val donghuaList = values[0] as List<com.azhua.core.model.Donghua>
-        val continueWatchingEpisodes = values[1] as List<com.azhua.core.model.Episode>
-        val searchQuery = values[2] as String
-        val isSearchActive = values[3] as Boolean
-        val expandedIds = values[4] as Set<Long>
-        val selectedIds = values[5] as Set<Long>
-        val isMultiSelect = values[6] as Boolean
-        val filter = values[7] as LibraryFilter
-        val columns = values[8] as Int
-        val error = values[9] as String?
+    ) { searchQuery, isSearchActive, expandedIds, selectedIds, isMultiSelect, filter, columns ->
+        UiConfig(searchQuery, isSearchActive, expandedIds, selectedIds, isMultiSelect, filter, columns)
+    }
 
-        if (error != null) {
-            return@combine LibraryUiState.Error(error)
-        }
-
+    val uiState: StateFlow<LibraryUiState> = combine(
+        dataFlow,
+        uiConfigFlow,
+    ) { (donghuaList, continueWatchingEpisodes), config ->
         if (donghuaList.isEmpty()) {
             return@combine LibraryUiState.Empty
         }
 
         // Filter by search query
-        val filtered = if (searchQuery.isBlank()) donghuaList
-        else donghuaList.filter { it.title.contains(searchQuery, ignoreCase = true) }
+        val filtered = if (config.searchQuery.isBlank()) donghuaList
+        else donghuaList.filter { it.title.contains(config.searchQuery, ignoreCase = true) }
 
         // Filter by status
-        val statusFiltered = when (filter.statusFilter) {
+        val statusFiltered = when (config.filter.statusFilter) {
             StatusFilter.ALL -> filtered
-            else -> filtered.filter { it.status.name == filter.statusFilter.name }
+            else -> filtered.filter { it.status.name == config.filter.statusFilter.name }
         }
 
         // Sort
-        val sorted = when (filter.sortBy) {
+        val sorted = when (config.filter.sortBy) {
             SortOption.TITLE_ASC -> statusFiltered.sortedBy { it.title.lowercase() }
             SortOption.TITLE_DESC -> statusFiltered.sortedByDescending { it.title.lowercase() }
             SortOption.LAST_WATCHED -> statusFiltered.sortedByDescending { it.lastUpdated }
@@ -77,7 +72,7 @@ class LibraryViewModel @Inject constructor(
             SortOption.LAST_UPDATED -> statusFiltered.sortedByDescending { it.lastUpdated }
         }
 
-        // Group into single category for now (TODO: real categories)
+        // Group into categories
         val categories = listOf(
             CategoryWithDonghua(
                 category = com.azhua.core.model.Category(id = 1, name = "Favorit", isDefault = true),
@@ -100,14 +95,14 @@ class LibraryViewModel @Inject constructor(
 
         LibraryUiState.Success(
             categories = categories,
-            expandedCategoryIds = expandedIds,
+            expandedCategoryIds = config.expandedCategoryIds,
             continueWatching = continueWatching,
-            activeFilter = filter,
-            searchQuery = searchQuery,
-            isSearchActive = isSearchActive,
-            selectedDonghuaIds = selectedIds,
-            isMultiSelectMode = isMultiSelect,
-            gridColumns = columns,
+            activeFilter = config.filter,
+            searchQuery = config.searchQuery,
+            isSearchActive = config.isSearchActive,
+            selectedDonghuaIds = config.selectedDonghuaIds,
+            isMultiSelectMode = config.isMultiSelectMode,
+            gridColumns = config.gridColumns,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -168,7 +163,7 @@ class LibraryViewModel @Inject constructor(
                 _gridColumns.value = event.columns
             }
             LibraryEvent.Retry -> {
-                _error.value = null
+                // Data flow auto-retries
             }
         }
     }
@@ -178,3 +173,13 @@ class LibraryViewModel @Inject constructor(
         _selectedDonghuaIds.value = setOf(donghuaId)
     }
 }
+
+private data class UiConfig(
+    val searchQuery: String,
+    val isSearchActive: Boolean,
+    val expandedCategoryIds: Set<Long>,
+    val selectedDonghuaIds: Set<Long>,
+    val isMultiSelectMode: Boolean,
+    val filter: LibraryFilter,
+    val gridColumns: Int,
+)

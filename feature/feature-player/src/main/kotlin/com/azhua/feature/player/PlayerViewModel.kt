@@ -6,10 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.azhua.data.repository.DonghuaRepository
 import com.azhua.data.repository.EpisodeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -19,7 +17,6 @@ class PlayerViewModel @Inject constructor(
     private val episodeRepository: EpisodeRepository,
 ) : ViewModel() {
 
-    // Keys match PlayerActivity intent extras
     private val donghuaId: Long = savedStateHandle["extra_donghua_id"] ?: 0L
     private val episodeId: Long = savedStateHandle["extra_episode_id"] ?: 0L
 
@@ -27,10 +24,15 @@ class PlayerViewModel @Inject constructor(
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
     private var controlsHideJob: Job? = null
+    private var progressSaveJob: Job? = null
+
+    // Non-cancellable scope for saving progress on exit
+    private val saveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
         if (donghuaId > 0) {
             loadData()
+            startPeriodicProgressSave()
         }
     }
 
@@ -55,6 +57,32 @@ class PlayerViewModel @Inject constructor(
                         )
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Save progress every 5 seconds during playback.
+     * This ensures progress is saved even if the app is killed.
+     */
+    private fun startPeriodicProgressSave() {
+        progressSaveJob = viewModelScope.launch {
+            while (isActive) {
+                delay(5000)
+                saveCurrentProgress()
+            }
+        }
+    }
+
+    private fun saveCurrentProgress() {
+        val state = _uiState.value
+        if (state.currentEpisode != null && state.positionMs > 0 && state.isPlaying) {
+            viewModelScope.launch {
+                episodeRepository.updateWatchProgress(
+                    episodeId = state.currentEpisode.id,
+                    positionMs = state.positionMs,
+                    isWatched = state.positionMs >= state.durationMs * 0.9,
+                )
             }
         }
     }
@@ -85,6 +113,8 @@ class PlayerViewModel @Inject constructor(
                 _uiState.update { it.copy(playbackSpeed = event.speed) }
             }
             is PlayerEvent.PlayEpisode -> {
+                // Save progress for previous episode first
+                saveCurrentProgress()
                 val ep = _uiState.value.episodeList.find { it.id == event.episodeId }
                 ep?.let {
                     _uiState.update { state ->
@@ -98,6 +128,7 @@ class PlayerViewModel @Inject constructor(
                 }
             }
             PlayerEvent.PlayNext -> {
+                saveCurrentProgress()
                 val current = _uiState.value.currentEpisode ?: return
                 val next = _uiState.value.episodeList
                     .filter { it.episodeNumber > current.episodeNumber }
@@ -105,6 +136,7 @@ class PlayerViewModel @Inject constructor(
                 next?.let { onEvent(PlayerEvent.PlayEpisode(it.id)) }
             }
             PlayerEvent.PlayPrevious -> {
+                saveCurrentProgress()
                 val current = _uiState.value.currentEpisode ?: return
                 val prev = _uiState.value.episodeList
                     .filter { it.episodeNumber < current.episodeNumber }
@@ -124,15 +156,10 @@ class PlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        val state = _uiState.value
-        if (state.currentEpisode != null && state.positionMs > 0) {
-            viewModelScope.launch {
-                episodeRepository.updateWatchProgress(
-                    episodeId = state.currentEpisode.id,
-                    positionMs = state.positionMs,
-                    isWatched = state.positionMs >= state.durationMs * 0.9,
-                )
-            }
+        progressSaveJob?.cancel()
+        // Use non-cancellable scope to save final progress
+        saveScope.launch {
+            saveCurrentProgress()
         }
     }
 }

@@ -6,10 +6,12 @@ import com.azhua.core.model.DonghuaStatus
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
+private val gson = Gson()
+private val genresType = object : TypeToken<List<String>>() {}.type
+
 fun DonghuaEntity.toDomain(): Donghua {
-    val genresType = object : TypeToken<List<String>>() {}.type
     val genresList: List<String> = try {
-        Gson().fromJson(genres, genresType) ?: emptyList()
+        gson.fromJson(genres, genresType) ?: emptyList()
     } catch (e: Exception) {
         emptyList()
     }
@@ -44,7 +46,7 @@ fun Donghua.toEntity(): DonghuaEntity {
         titleAlt = titleAlt,
         coverUrl = coverUrl,
         synopsis = synopsis,
-        genres = Gson().toJson(genres),
+        genres = gson.toJson(genres),
         status = status.name,
         studio = studio,
         year = year,

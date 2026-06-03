@@ -31,16 +31,31 @@ fun PlayerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val view = LocalView.current
 
-    // Force landscape
-    LaunchedEffect(Unit) {
+    // Force landscape + immersive mode, restore on dispose
+    DisposableEffect(Unit) {
         val activity = view.context as? Activity
+        val originalOrientation = activity?.requestedOrientation
+
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        // Full immersive
-        val window = (view.context as? Activity)?.window ?: return@LaunchedEffect
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowInsetsControllerCompat(window, view).apply {
-            hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        val window = activity?.window
+        if (window != null) {
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            WindowInsetsControllerCompat(window, view).apply {
+                hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
+
+        onDispose {
+            // Restore original orientation
+            activity?.requestedOrientation = originalOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            // Show system bars
+            if (window != null) {
+                WindowCompat.setDecorFitsSystemWindows(window, true)
+                WindowInsetsControllerCompat(window, view).apply {
+                    show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                }
+            }
         }
     }
 
@@ -164,7 +179,16 @@ private fun PlayerControls(
                 .background(Color.Black.copy(alpha = 0.5f))
                 .padding(8.dp),
         ) {
-            // Progress bar
+            // Progress bar - use onValueChangeFinished to avoid feedback loop
+            var sliderPosition by remember { mutableFloatStateOf(0f) }
+            var isDragging by remember { mutableStateOf(false) }
+
+            LaunchedEffect(state.positionMs, state.durationMs) {
+                if (!isDragging && state.durationMs > 0) {
+                    sliderPosition = state.positionMs.toFloat() / state.durationMs
+                }
+            }
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
@@ -175,9 +199,14 @@ private fun PlayerControls(
                     color = Color.White,
                 )
                 Slider(
-                    value = if (state.durationMs > 0) state.positionMs.toFloat() / state.durationMs else 0f,
+                    value = sliderPosition,
                     onValueChange = { fraction ->
-                        onEvent(PlayerEvent.SeekTo((fraction * state.durationMs).toLong()))
+                        isDragging = true
+                        sliderPosition = fraction
+                    },
+                    onValueChangeFinished = {
+                        isDragging = false
+                        onEvent(PlayerEvent.SeekTo((sliderPosition * state.durationMs).toLong()))
                     },
                     modifier = Modifier.weight(1f),
                     colors = SliderDefaults.colors(
@@ -200,7 +229,6 @@ private fun PlayerControls(
                 IconButton(onClick = { onEvent(PlayerEvent.ToggleLock) }) {
                     Icon(Icons.Filled.LockOpen, "Lock", tint = Color.White, modifier = Modifier.size(24.dp))
                 }
-                // Speed control
                 var showSpeed by remember { mutableStateOf(false) }
                 Box {
                     TextButton(onClick = { showSpeed = true }) {

@@ -16,14 +16,16 @@ class RateLimitInterceptor(
     private val semaphore = Semaphore(maxRequests)
 
     override fun intercept(chain: Interceptor.Chain): Response {
+        // Acquire a permit before making the request
+        // If no permit available, wait up to the specified time
+        val acquired = semaphore.tryAcquire(perSeconds, TimeUnit.SECONDS)
         try {
-            if (!semaphore.tryAcquire(perSeconds, TimeUnit.SECONDS)) {
-                // Wait a bit and proceed anyway
-                Thread.sleep(500)
-            }
             return chain.proceed(chain.request())
         } finally {
-            semaphore.release()
+            // Only release if we actually acquired a permit
+            if (acquired) {
+                semaphore.release()
+            }
         }
     }
 }

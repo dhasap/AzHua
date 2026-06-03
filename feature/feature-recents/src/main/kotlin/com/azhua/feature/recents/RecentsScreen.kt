@@ -101,7 +101,7 @@ private fun RecentsContent(
                         progress = progress.progress,
                         timestamp = progress.lastWatchedAt,
                         onClick = {
-                            onNavigateToPlayer(progress.donghua.id, progress.lastEpisode!!.id)
+                            progress.lastEpisode?.let { ep -> onNavigateToPlayer(progress.donghua.id, ep.id) }
                         },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     )

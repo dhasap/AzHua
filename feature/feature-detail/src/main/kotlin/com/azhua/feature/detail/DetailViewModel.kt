@@ -29,7 +29,7 @@ class DetailViewModel @Inject constructor(
         viewModelScope.launch {
             donghuaRepository.getDonghuaById(donghuaId).collect { donghua ->
                 if (donghua != null) {
-                    _uiState.update { it.copy(donghua = donghua, isInLibrary = donghua.isInLibrary) }
+                    _uiState.update { it.copy(donghua = donghua, isInLibrary = donghua.isInLibrary, isLoading = false) }
                 } else {
                     _uiState.update { it.copy(error = "Donghua tidak ditemukan", isLoading = false) }
                 }

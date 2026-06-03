@@ -2,34 +2,29 @@ package com.azhua.app.extension
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Environment
 import dalvik.system.DexClassLoader
 import com.azhua.extension.api.AzExtension
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Loads extension APKs using DexClassLoader.
- * Extensions are stored in the app's external files directory.
- */
 @Singleton
 class ExtensionLoader @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private val extensionsDir = File(context.getExternalFilesDir(null), "extensions")
-    private val loadedExtensions = mutableMapOf<String, AzExtension>()
+    private val loadedExtensions = ConcurrentHashMap<String, AzExtension>()
 
     init {
         extensionsDir.mkdirs()
     }
 
-    /**
-     * Load all installed extensions from the extensions directory.
-     */
+    @Synchronized
     fun loadAllExtensions(): List<LoadedExtension> {
         val extensions = mutableListOf<LoadedExtension>()
+        loadedExtensions.clear()
 
         extensionsDir.listFiles()?.filter { it.extension == "apk" }?.forEach { apkFile ->
             try {
@@ -38,7 +33,6 @@ class ExtensionLoader @Inject constructor(
                     extensions.add(ext)
                 }
             } catch (e: Exception) {
-                // Log error but continue loading other extensions
                 e.printStackTrace()
             }
         }
@@ -46,16 +40,12 @@ class ExtensionLoader @Inject constructor(
         return extensions
     }
 
-    /**
-     * Load a single extension from an APK file.
-     */
+    @Synchronized
     fun loadExtension(apkFile: File): LoadedExtension? {
         try {
-            // Create optimized directory
             val optimizedDir = File(context.cacheDir, "dex_opt")
             optimizedDir.mkdirs()
 
-            // Load the APK
             val dexClassLoader = DexClassLoader(
                 apkFile.absolutePath,
                 optimizedDir.absolutePath,
@@ -63,7 +53,6 @@ class ExtensionLoader @Inject constructor(
                 context.classLoader
             )
 
-            // Read metadata from the APK
             val packageInfo = context.packageManager.getPackageArchiveInfo(
                 apkFile.absolutePath,
                 PackageManager.GET_META_DATA
@@ -74,7 +63,6 @@ class ExtensionLoader @Inject constructor(
             val extensionVersion = metadata.getInt("com.azhua.extension.versionId", 0)
             val extensionLang = metadata.getString("com.azhua.extension.lang") ?: "en"
 
-            // Find the extension class
             val className = metadata.getString("com.azhua.extension.class")
                 ?: findExtensionClass(apkFile)
                 ?: return null
@@ -95,29 +83,15 @@ class ExtensionLoader @Inject constructor(
         }
     }
 
-    /**
-     * Get a loaded extension by ID.
-     */
-    fun getExtension(extensionId: String): AzExtension? {
-        return loadedExtensions[extensionId]
-    }
+    fun getExtension(extensionId: String): AzExtension? = loadedExtensions[extensionId]
 
-    /**
-     * Get all loaded extensions.
-     */
-    fun getLoadedExtensions(): Map<String, AzExtension> {
-        return loadedExtensions.toMap()
-    }
+    fun getLoadedExtensions(): Map<String, AzExtension> = loadedExtensions.toMap()
 
-    /**
-     * Install an extension from a downloaded APK file.
-     */
+    @Synchronized
     fun installExtension(apkFile: File): Boolean {
         try {
             val destFile = File(extensionsDir, apkFile.name)
             apkFile.copyTo(destFile, overwrite = true)
-
-            // Try to load it to verify it works
             val loaded = loadExtension(destFile)
             return loaded != null
         } catch (e: Exception) {
@@ -126,14 +100,10 @@ class ExtensionLoader @Inject constructor(
         }
     }
 
-    /**
-     * Uninstall an extension by ID.
-     */
+    @Synchronized
     fun uninstallExtension(extensionId: String): Boolean {
         try {
             loadedExtensions.remove(extensionId)
-
-            // Find and delete the APK file
             extensionsDir.listFiles()?.forEach { apkFile ->
                 try {
                     val packageInfo = context.packageManager.getPackageArchiveInfo(
@@ -156,18 +126,12 @@ class ExtensionLoader @Inject constructor(
         }
     }
 
-    /**
-     * Find the extension class name by scanning the APK.
-     */
     private fun findExtensionClass(apkFile: File): String? {
-        // Default convention: the extension class is in the main package
         val packageInfo = context.packageManager.getPackageArchiveInfo(
             apkFile.absolutePath,
             PackageManager.GET_META_DATA
         ) ?: return null
 
-        // Look for a class that implements AzExtension
-        // This is a simplified approach - in production, use manifest metadata
         val packageName = packageInfo.packageName
         val commonClassNames = listOf(
             "${packageName}.Extension",
@@ -179,9 +143,6 @@ class ExtensionLoader @Inject constructor(
     }
 }
 
-/**
- * Represents a loaded extension.
- */
 data class LoadedExtension(
     val extension: AzExtension,
     val apkFile: File,
