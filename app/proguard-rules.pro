@@ -1,59 +1,47 @@
-# 🛡️ MANTRA PELINDUNG AZHUA - ProGuard Rules
-# ==========================================
-# File ini melindungi class-class penting dari obfuscation (pengacakan nama)
-# agar arsitektur modular tetap berfungsi setelah release build.
+# ========================
+# AzHua ProGuard Rules
+# ========================
 
-# --- 1. LINDUNGI KONTRAK SUKI (CORE CONTRACTS) ---
-# Ini PENTING! Jika Source interface diobfuscate, Ekstensi tidak bisa dimuat.
--keep class com.azhua.core.contracts.** { *; }
--keep interface com.azhua.core.contracts.** { *; }
--keepclassmembers class com.azhua.core.contracts.** { *; }
-
-# --- 2. LINDUNGI GSON MODELS ---
-# Model untuk parsing JSON dari GitHub (index.json)
--keep class com.azhua.app.data.models.ExtensionItem { *; }
--keepclassmembers class com.azhua.app.data.models.ExtensionItem { *; }
-
-# --- 3. LINDUNGI ROOM DATABASE ENTITIES ---
--keep class com.azhua.app.data.local.WatchHistory { *; }
--keepclassmembers class com.azhua.app.data.local.WatchHistory {
-    <fields>;
-    <methods>;
+# Hilt
+-keepattributes *Annotation*
+-keep @dagger.hilt.android.lifecycle.HiltViewModel class * extends androidx.lifecycle.ViewModel
+-keepclassmembers class * {
+    @dagger.assisted.Assisted <fields>;
+    @dagger.assisted.AssistedFactory <methods>;
 }
 
-# --- 4. LINDUNGI KOTLIN COROUTINES ---
--keepclassmembernames class kotlinx.** {
-    volatile <fields>;
+# Room
+-keep class * extends androidx.room.RoomDatabase
+-keepclassmembers class * extends androidx.room.RoomDatabase {
+    public static ** INSTANCE;
 }
+-keep class com.azhua.core.database.entity.** { *; }
+-keep class com.azhua.core.database.dao.** { *; }
 
-# --- 5. LINDUNGI COMPOSE (OPSIONAL, TAPI AMAN) ---
--keep class androidx.compose.** { *; }
+# OkHttp
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
 
-# --- 6. LINDUNGI JSOUP (JIKA ADA DI CORE) ---
--keep class org.jsoup.** { *; }
--keepclassmembers class org.jsoup.** { *; }
+# Gson
+-keepattributes Signature
+-keepattributes *Annotation*
+-dontwarn sun.misc.**
+-keep class com.google.gson.** { *; }
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
 
-# --- 7. LINDUNGI MEDIA3/EXOPLAYER ---
+# Coil
+-keep class coil3.** { *; }
+
+# Media3/ExoPlayer
 -keep class androidx.media3.** { *; }
 
-# --- 8. LINDUNGI OKHTTP & GSON ---
--keep class com.google.gson.** { *; }
--keep class okhttp3.** { *; }
--keep class okio.** { *; }
+# Extension API
+-keep class com.azhua.extension.api.** { *; }
+-keep class com.azhua.core.model.** { *; }
 
-# --- 9. JANGAN HAPUS LOG DARI RELEASE (OPSIONAL) ---
-# Jika ingin hapus Log.d di release, comment baris ini:
-# -assumenosideeffects class android.util.Log {
-#     public static int d(...);
-#     public static int v(...);
-# }
-
-# --- 10. KEEP ANNOTATIONS ---
--keepattributes *Annotation*
--keepattributes Signature
--keepattributes Exceptions
--keepattributes InnerClasses
--keepattributes EnclosingMethod
--keepattributes Deprecated
--keepattributes SourceFile
--keepattributes LineNumberTable
+# Coroutines
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}

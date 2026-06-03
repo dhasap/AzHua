@@ -1,16 +1,29 @@
+# Built outputs
 *.iml
 .gradle
 /local.properties
 /.idea
 .DS_Store
 /build
+*/build
 /captures
 .externalNativeBuild
 .cxx
 local.properties
 
-# 🔐 JANGAN COMMIT KEYSTORE!
-keystore/
-*.jks
-*.keystore
-keystore.properties
+# Kotlin
+*.class
+*.jar
+*.war
+*.ear
+
+# Android
+/app/build
+/app/release
+*.apk
+*.aab
+
+# IDE
+/.vscode
+*.swp
+*~

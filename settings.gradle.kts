@@ -12,7 +12,41 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+
 rootProject.name = "AzHua"
-include(":app")
-include(":core-contracts")
-include(":ext-anichin")
+
+// ========================
+// Core Modules
+// ========================
+include(":core:core-common")
+include(":core:core-ui")
+include(":core:core-model")
+include(":core:core-database")
+include(":core:core-network")
+
+// ========================
+// Feature Modules
+// ========================
+include(":feature:feature-library")
+include(":feature:feature-discover")
+include(":feature:feature-recents")
+include(":feature:feature-extensions")
+include(":feature:feature-detail")
+include(":feature:feature-player")
+include(":feature:feature-settings")
+
+// ========================
+// Data Modules
+// ========================
+include(":data:data-repository")
+
+// ========================
+// Extension API
+// ========================
+include(":extension-api")
+
+// ========================
+// Legacy (to be removed)
+// ========================
+// include(":core-contracts") // replaced by extension-api
+// include(":ext-anichin")    // will be re-integrated later
