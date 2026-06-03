@@ -46,7 +46,6 @@ include(":data:data-repository")
 include(":extension-api")
 
 // ========================
-// Legacy (to be removed)
+// Extensions
 // ========================
-// include(":core-contracts") // replaced by extension-api
-// include(":ext-anichin")    // will be re-integrated later
+include(":ext-anichin")
