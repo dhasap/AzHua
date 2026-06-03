@@ -2,6 +2,7 @@ package com.azhua.feature.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -65,8 +67,9 @@ fun SettingsScreen(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = "🐉",
+                                    text = "A",
                                     style = MaterialTheme.typography.headlineMedium,
+                                    color = ColorPrimary,
                                 )
                             }
                         }
@@ -78,7 +81,7 @@ fun SettingsScreen(
                                 color = ColorTextPrimary,
                             )
                             Text(
-                                text = "${uiState.totalDonghua} Donghua · ${uiState.totalEpisodes} Episode",
+                                text = "${uiState.totalDonghua} Donghua - ${uiState.totalEpisodes} Episode",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = ColorTextSecondary,
                             )
@@ -89,7 +92,7 @@ fun SettingsScreen(
 
             // Appearance Section
             item(key = "appearance_header") {
-                SectionHeader(icon = "🎨", title = "TAMPILAN")
+                SectionHeader("TAMPILAN")
             }
             item(key = "theme") {
                 SettingsDropdownItem(
@@ -125,7 +128,7 @@ fun SettingsScreen(
 
             // Player Section
             item(key = "player_header") {
-                SectionHeader(icon = "▶", title = "PEMUTAR")
+                SectionHeader("PEMUTAR")
             }
             item(key = "quality") {
                 SettingsDropdownItem(
@@ -160,7 +163,7 @@ fun SettingsScreen(
 
             // Library Section
             item(key = "library_header") {
-                SectionHeader(icon = "📚", title = "LIBRARY")
+                SectionHeader("LIBRARY")
             }
             item(key = "update_on_open") {
                 SettingsSwitchItem(
@@ -181,7 +184,7 @@ fun SettingsScreen(
 
             // Data Section
             item(key = "data_header") {
-                SectionHeader(icon = "💾", title = "DATA & PENYIMPANAN")
+                SectionHeader("DATA & PENYIMPANAN")
             }
             item(key = "backup") {
                 SettingsClickableItem(
@@ -220,9 +223,9 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SectionHeader(icon: String, title: String) {
+private fun SectionHeader(title: String) {
     Text(
-        text = "$icon  $title",
+        text = title,
         style = MaterialTheme.typography.labelLarge,
         color = ColorTextSecondary,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -270,7 +273,7 @@ private fun SettingsDropdownItem(
         leadingContent = { Icon(icon, null, tint = ColorIconDefault) },
         trailingContent = {
             Box {
-                Text("▼", color = ColorTextTertiary)
+                Text("v", color = ColorTextTertiary)
                 DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     options.forEachIndexed { idx, option ->
                         DropdownMenuItem(
@@ -331,7 +334,7 @@ private fun SettingsClickableItem(
         headlineContent = { Text(title, color = ColorTextPrimary) },
         supportingContent = subtitle?.let { { Text(it, color = ColorTextSecondary) } },
         leadingContent = { Icon(icon, null, tint = ColorIconDefault) },
-        trailingContent = { Text("→", color = ColorTextTertiary) },
+        trailingContent = { Text("->", color = ColorTextTertiary) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(onClick = onClick),
     )

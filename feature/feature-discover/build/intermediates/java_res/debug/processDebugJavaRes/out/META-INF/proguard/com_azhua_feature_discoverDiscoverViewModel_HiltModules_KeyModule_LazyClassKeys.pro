@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.discover.DiscoverViewModel
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.discover.DiscoverViewModel

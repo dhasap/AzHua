@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.detail.DetailViewModel
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.detail.DetailViewModel

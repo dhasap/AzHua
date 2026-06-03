@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.settings.SettingsViewModel
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.settings.SettingsViewModel

@@ -50,13 +50,12 @@ fun Modifier.pressScaleEffect(
  * Fade-in animation for screen content.
  */
 fun Modifier.fadeInOnLoad(
-    delayMs: Int = 0,
     durationMs: Int = 300,
 ): Modifier = composed {
     var isVisible by remember { mutableStateOf(false) }
     val alpha by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(durationMs, delayMs = delayMs),
+        animationSpec = tween(durationMs),
         label = "fade_in",
     )
 
@@ -73,19 +72,18 @@ fun Modifier.fadeInOnLoad(
  * Slide-up animation for screen content.
  */
 fun Modifier.slideUpOnLoad(
-    delayMs: Int = 0,
     durationMs: Int = 400,
     distancePx: Float = 50f,
 ): Modifier = composed {
     var isVisible by remember { mutableStateOf(false) }
     val offsetY by animateFloatAsState(
         targetValue = if (isVisible) 0f else distancePx,
-        animationSpec = tween(durationMs, delayMs = delayMs, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMs, easing = FastOutSlowInEasing),
         label = "slide_up",
     )
     val alpha by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(durationMs, delayMs = delayMs),
+        animationSpec = tween(durationMs),
         label = "fade_in_slide",
     )
 

@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -92,6 +93,24 @@ private fun DetailContent(
             )
         }
     ) { paddingValues ->
+        // Compute filtered episodes outside LazyColumn
+        val filteredEpisodes = remember(state.episodes, state.episodeFilter, state.episodeSortOrder, state.searchQuery) {
+            state.episodes.let { eps ->
+                val filtered = when (state.episodeFilter) {
+                    EpisodeFilter.ALL -> eps
+                    EpisodeFilter.UNWATCHED -> eps.filter { !it.isWatched }
+                    EpisodeFilter.WATCHED -> eps.filter { it.isWatched }
+                    EpisodeFilter.DOWNLOADED -> eps.filter { it.isDownloaded }
+                }
+                val searched = if (state.searchQuery.isBlank()) filtered
+                else filtered.filter { (it.title ?: "").contains(state.searchQuery, ignoreCase = true) }
+                when (state.episodeSortOrder) {
+                    EpisodeSortOrder.NEWEST -> searched.sortedByDescending { it.episodeNumber }
+                    EpisodeSortOrder.OLDEST -> searched.sortedBy { it.episodeNumber }
+                }
+            }
+        }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -208,7 +227,8 @@ private fun DetailContent(
             }
 
             // Synopsis
-            if (!donghua.synopsis.isNullOrBlank()) {
+            val synopsis = donghua.synopsis
+            if (!synopsis.isNullOrBlank()) {
                 item(key = "synopsis") {
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                         Text(
@@ -219,13 +239,13 @@ private fun DetailContent(
                         Spacer(modifier = Modifier.height(4.dp))
                         var expanded by remember { mutableStateOf(false) }
                         Text(
-                            text = donghua.synopsis,
+                            text = synopsis,
                             style = MaterialTheme.typography.bodyMedium,
                             color = ColorTextSecondary,
                             maxLines = if (expanded) Int.MAX_VALUE else 3,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        if (donghua.synopsis.length > 150) {
+                        if (synopsis.length > 150) {
                             TextButton(onClick = { expanded = !expanded }) {
                                 Text(
                                     text = if (expanded) "Lebih Sedikit ▲" else "Selengkapnya ▼",
@@ -292,24 +312,6 @@ private fun DetailContent(
                         )
                     }
                 }
-            }
-
-            // Episode List
-            val filteredEpisodes = remember(state.episodes, state.episodeFilter, state.episodeSortOrder, state.searchQuery) {
-            state.episodes.let { eps ->
-                val filtered = when (state.episodeFilter) {
-                    EpisodeFilter.ALL -> eps
-                    EpisodeFilter.UNWATCHED -> eps.filter { !it.isWatched }
-                    EpisodeFilter.WATCHED -> eps.filter { it.isWatched }
-                    EpisodeFilter.DOWNLOADED -> eps.filter { it.isDownloaded }
-                }
-                val searched = if (state.searchQuery.isBlank()) filtered
-                else filtered.filter { (it.title ?: "").contains(state.searchQuery, ignoreCase = true) }
-                when (state.episodeSortOrder) {
-                    EpisodeSortOrder.NEWEST -> searched.sortedByDescending { it.episodeNumber }
-                    EpisodeSortOrder.OLDEST -> searched.sortedBy { it.episodeNumber }
-                }
-            }
             }
 
             items(

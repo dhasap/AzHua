@@ -15,6 +15,6 @@ fun String.truncate(maxLength: Int): String {
  * Parse episode number from string like "Episode 12" or "Ep. 12.5".
  */
 fun String.parseEpisodeNumber(): Float {
-    val regex = Regex("(?:episode|ep\.?\s*)(\d+(?:\.\d+)?)", RegexOption.IGNORE_CASE)
+    val regex = Regex("""(?:episode|ep\.?\s*)(\d+(?:\.\d+)?)""", RegexOption.IGNORE_CASE)
     return regex.find(this)?.groupValues?.get(1)?.toFloatOrNull() ?: 0f
 }

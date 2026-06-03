@@ -16,21 +16,21 @@ class VideoStreamParser(private val client: AnichinClient) {
         private const val TAG = "VideoStreamParser"
 
         // Patterns for extracting video URLs from various sources
-        private val HLS_PATTERN = Pattern.compile("https?://[^"'\s]+\.m3u8[^"'\s]*", Pattern.CASE_INSENSITIVE)
-        private val MP4_PATTERN = Pattern.compile("https?://[^"'\s]+\.mp4[^"'\s]*", Pattern.CASE_INSENSITIVE)
-        private val VIDEO_URL_PATTERN = Pattern.compile("https?://[^"'\s]+(?:\.m3u8|\.mp4|/embed/|/player/)[^"'\s]*", Pattern.CASE_INSENSITIVE)
-        private val IFRAME_PATTERN = Pattern.compile("<iframe[^>]+src=["']([^"']+)["']", Pattern.CASE_INSENSITIVE)
-        private val SOURCE_PATTERN = Pattern.compile("<source[^>]+src=["']([^"']+)["']", Pattern.CASE_INSENSITIVE)
-        private val EVAL_PATTERN = Pattern.compile("eval\((.+?)\)", Pattern.DOTALL)
+        private val HLS_PATTERN = Pattern.compile("""https?://[^\s"']+\.m3u8[^\s"']*""", Pattern.CASE_INSENSITIVE)
+        private val MP4_PATTERN = Pattern.compile("""https?://[^\s"']+\.mp4[^\s"']*""", Pattern.CASE_INSENSITIVE)
+        private val IFRAME_PATTERN = Pattern.compile("""<iframe[^>]+src=["']([^"']+)["']""", Pattern.CASE_INSENSITIVE)
+        private val SOURCE_PATTERN = Pattern.compile("""<source[^>]+src=["']([^"']+)["']""", Pattern.CASE_INSENSITIVE)
+        private val EVAL_PATTERN = Pattern.compile("""eval\((.+?)\)""", Pattern.DOTALL)
+        private val SCRIPT_PATTERN = Pattern.compile("""<script[^>]*>(.+?)</script>""", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
 
         // Known video host patterns
         private val HOST_PATTERNS = mapOf(
-            "gdrive" to Pattern.compile("https?://[^"'\s]*drive\.google\.com[^"'\s]*", Pattern.CASE_INSENSITIVE),
-            "mp4upload" to Pattern.compile("https?://[^"'\s]*mp4upload\.com[^"'\s]*", Pattern.CASE_INSENSITIVE),
-            "streamtape" to Pattern.compile("https?://[^"'\s]*streamtape\.com[^"'\s]*", Pattern.CASE_INSENSITIVE),
-            "mixdrop" to Pattern.compile("https?://[^"'\s]*mixdrop\.co[^"'\s]*", Pattern.CASE_INSENSITIVE),
-            "streamwish" to Pattern.compile("https?://[^"'\s]*streamwish\.to[^"'\s]*", Pattern.CASE_INSENSITIVE),
-            "filemoon" to Pattern.compile("https?://[^"'\s]*filemoon\.sx[^"'\s]*", Pattern.CASE_INSENSITIVE),
+            "gdrive" to Pattern.compile("""https?://[^\s"']*drive\.google\.com[^\s"']*""", Pattern.CASE_INSENSITIVE),
+            "mp4upload" to Pattern.compile("""https?://[^\s"']*mp4upload\.com[^\s"']*""", Pattern.CASE_INSENSITIVE),
+            "streamtape" to Pattern.compile("""https?://[^\s"']*streamtape\.com[^\s"']*""", Pattern.CASE_INSENSITIVE),
+            "mixdrop" to Pattern.compile("""https?://[^\s"']*mixdrop\.co[^\s"']*""", Pattern.CASE_INSENSITIVE),
+            "streamwish" to Pattern.compile("""https?://[^\s"']*streamwish\.to[^\s"']*""", Pattern.CASE_INSENSITIVE),
+            "filemoon" to Pattern.compile("""https?://[^\s"']*filemoon\.sx[^\s"']*""", Pattern.CASE_INSENSITIVE),
         )
     }
 
@@ -66,7 +66,6 @@ class VideoStreamParser(private val client: AnichinClient) {
     fun parseServerLinks(document: Document): List<Pair<String, String>> {
         val servers = mutableListOf<Pair<String, String>>()
 
-        // Look for server selection elements
         document.select(".server-item, .server-option, [data-server], .episodiotitle a, .player-modes a").forEach { element ->
             try {
                 val serverName = element.text().trim()
@@ -84,7 +83,6 @@ class VideoStreamParser(private val client: AnichinClient) {
             }
         }
 
-        // Also check for select dropdowns
         document.select("select.server-select option, select#player option").forEach { option ->
             try {
                 val serverName = option.text().trim()
@@ -128,7 +126,6 @@ class VideoStreamParser(private val client: AnichinClient) {
 
             if (iframeUrl.startsWith("http") && !iframeUrl.contains("about:blank")) {
                 try {
-                    // Fetch iframe content and extract video
                     val iframeDoc = client.getDocument(iframeUrl)
                     val iframeStreams = parseVideoStreams(iframeDoc, iframeUrl)
                     streams.addAll(iframeStreams)
@@ -147,23 +144,8 @@ class VideoStreamParser(private val client: AnichinClient) {
     private fun extractFromJavaScript(html: String): List<VideoUrl> {
         val streams = mutableListOf<VideoUrl>()
 
-        // Check for eval-packed scripts
-        val evalMatcher = EVAL_PATTERN.matcher(html)
-        while (evalMatcher.find()) {
-            try {
-                val packed = evalMatcher.group(1) ?: continue
-                val unpacked = unpackJavaScript(packed)
-                if (unpacked != null) {
-                    streams.addAll(extractUrlsFromText(unpacked))
-                }
-            } catch (e: Exception) {
-                // Ignore eval parsing errors
-            }
-        }
-
         // Check script tags for video URLs
-        val scriptPattern = Pattern.compile("<script[^>]*>(.+?)</script>", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
-        val scriptMatcher = scriptPattern.matcher(html)
+        val scriptMatcher = SCRIPT_PATTERN.matcher(html)
 
         while (scriptMatcher.find()) {
             val scriptContent = scriptMatcher.group(1) ?: continue
@@ -290,20 +272,5 @@ class VideoStreamParser(private val client: AnichinClient) {
                 lower.contains("/embed/") ||
                 lower.contains("/player/") ||
                 lower.contains("video")
-    }
-
-    /**
-     * Simple JavaScript unpacker for eval-packed scripts.
-     * Returns null if unpacking fails.
-     */
-    private fun unpackJavaScript(packed: String): String? {
-        try {
-            // Simple deobfuscation - look for packed function
-            val packPattern = Pattern.compile("function\s*\w*\s*\(\w+\)\s*\{\s*\w+\s*=\s*\w+\.split\s*\(\s*['"](.*?)['"]\s*\)\s*;\s*\w+\s*=\s*\[", Pattern.DOTALL)
-            // This is a simplified unpacker - production would need a full JS evaluator
-            return null
-        } catch (e: Exception) {
-            return null
-        }
     }
 }

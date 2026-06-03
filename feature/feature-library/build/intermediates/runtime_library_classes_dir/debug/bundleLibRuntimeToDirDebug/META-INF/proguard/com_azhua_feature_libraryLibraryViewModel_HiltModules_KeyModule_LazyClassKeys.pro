@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.library.LibraryViewModel
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.library.LibraryViewModel

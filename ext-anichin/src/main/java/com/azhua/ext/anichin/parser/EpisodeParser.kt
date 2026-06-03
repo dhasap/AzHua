@@ -15,7 +15,8 @@ class EpisodeParser(private val client: AnichinClient) {
 
     companion object {
         private const val TAG = "EpisodeParser"
-        private val EPISODE_NUMBER_PATTERN = Pattern.compile("(?:episode|ep\.?\s*)(\d+(?:\.\d+)?)", Pattern.CASE_INSENSITIVE)
+        private val EPISODE_NUMBER_PATTERN = Pattern.compile("""(?:episode|ep\.?\s*)(\d+(?:\.\d+)?)""", Pattern.CASE_INSENSITIVE)
+        private val NUMBER_PATTERN = Pattern.compile("""(\d+(?:\.\d+)?)""")
     }
 
     /**
@@ -24,7 +25,6 @@ class EpisodeParser(private val client: AnichinClient) {
     fun parseEpisodeList(document: Document, animeUrl: String): List<EpisodePage> {
         val episodes = mutableListOf<EpisodePage>()
 
-        // Try multiple selectors for episode lists
         val selectors = listOf(
             ".episodelist li",
             ".episode-item",
@@ -60,7 +60,6 @@ class EpisodeParser(private val client: AnichinClient) {
             }
         }
 
-        // Sort by episode number
         return episodes.sortedBy { it.episodeNumber }
     }
 
@@ -72,9 +71,7 @@ class EpisodeParser(private val client: AnichinClient) {
         return if (matcher.find()) {
             matcher.group(1)?.toFloatOrNull() ?: 0f
         } else {
-            // Try to find any number in the title
-            val numberPattern = Pattern.compile("(\d+(?:\.\d+)?)")
-            val numberMatcher = numberPattern.matcher(title)
+            val numberMatcher = NUMBER_PATTERN.matcher(title)
             if (numberMatcher.find()) {
                 numberMatcher.group(1)?.toFloatOrNull() ?: 0f
             } else {

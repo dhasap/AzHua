@@ -1,0 +1,9 @@
+com.azhua.core.ui
+font inter_bold
+font inter_medium
+font inter_regular
+font inter_semibold
+font noto_serif_sc_bold
+font noto_serif_sc_medium
+font noto_serif_sc_regular
+font noto_serif_sc_semibold

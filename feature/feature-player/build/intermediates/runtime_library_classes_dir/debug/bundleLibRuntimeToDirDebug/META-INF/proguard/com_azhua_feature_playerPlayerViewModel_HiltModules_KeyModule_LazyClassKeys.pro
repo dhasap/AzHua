@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.player.PlayerViewModel
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.player.PlayerViewModel

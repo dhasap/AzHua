@@ -135,6 +135,6 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.junit)
-    testImplementation(libs.coroutines-test)
+    testImplementation(libs.coroutines.test)
     testImplementation(libs.turbine)
 }

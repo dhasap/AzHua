@@ -25,7 +25,7 @@ class LibraryViewModel @Inject constructor(
     private val _filter = MutableStateFlow(LibraryFilter())
     private val _gridColumns = MutableStateFlow(2)
 
-    // Combine in smaller groups to avoid fragile positional indexing
+    // Combine data flows
     private val dataFlow = combine(
         donghuaRepository.getLibraryDonghua(),
         episodeRepository.getContinueWatching(),
@@ -33,16 +33,14 @@ class LibraryViewModel @Inject constructor(
         Pair(donghuaList, continueWatchingEpisodes)
     }
 
+    // Combine UI config flows (nested to avoid >5 parameter limit)
     private val uiConfigFlow = combine(
-        _searchQuery,
-        _isSearchActive,
-        _expandedCategoryIds,
-        _selectedDonghuaIds,
-        _isMultiSelectMode,
-        _filter,
-        _gridColumns,
-    ) { searchQuery, isSearchActive, expandedIds, selectedIds, isMultiSelect, filter, columns ->
-        UiConfig(searchQuery, isSearchActive, expandedIds, selectedIds, isMultiSelect, filter, columns)
+        combine(_searchQuery, _isSearchActive, _expandedCategoryIds) { q, s, e -> Triple(q, s, e) },
+        combine(_selectedDonghuaIds, _isMultiSelectMode, _filter, _gridColumns) { sel, multi, f, col ->
+            UiConfigPart2(sel, multi, f, col)
+        }
+    ) { (query, isActive, expanded), part2 ->
+        UiConfig(query, isActive, expanded, part2.selectedIds, part2.isMultiSelect, part2.filter, part2.gridColumns)
     }
 
     val uiState: StateFlow<LibraryUiState> = combine(
@@ -180,6 +178,13 @@ private data class UiConfig(
     val expandedCategoryIds: Set<Long>,
     val selectedDonghuaIds: Set<Long>,
     val isMultiSelectMode: Boolean,
+    val filter: LibraryFilter,
+    val gridColumns: Int,
+)
+
+private data class UiConfigPart2(
+    val selectedIds: Set<Long>,
+    val isMultiSelect: Boolean,
     val filter: LibraryFilter,
     val gridColumns: Int,
 )

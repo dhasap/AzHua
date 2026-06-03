@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.recents.RecentsViewModel
+-keep,allowobfuscation,allowshrinking class com.azhua.feature.recents.RecentsViewModel
