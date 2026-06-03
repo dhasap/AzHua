@@ -2,6 +2,7 @@ package com.azhua.core.ui.component
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -109,22 +110,22 @@ fun DonghuaCard(
 
             // Progress bar
             if (showProgress && progress > 0f) {
-                androidx.compose.foundation.layout.Box(
+                Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    androidx.compose.foundation.layout.Box(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(MaterialTheme.shapes.small)
                             .background(ColorSurfaceVariant)
                     ) {
-                        androidx.compose.foundation.layout.Box(
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth(progress)
-                                .aspectRatio(1f / 0.02f)
+                                .padding(vertical = 1.dp)
                                 .clip(MaterialTheme.shapes.small)
                                 .background(ColorSecondary)
                         )
@@ -134,15 +135,3 @@ fun DonghuaCard(
         }
     }
 }
-
-private fun Modifier.background(brush: Brush): Modifier = this.then(
-    Modifier.drawBehind {
-        drawRect(brush = brush)
-    }
-)
-
-private fun Modifier.background(color: Color): Modifier = this.then(
-    Modifier.drawBehind {
-        drawRect(color = color)
-    }
-)

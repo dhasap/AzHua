@@ -97,7 +97,7 @@ private fun RecentsContent(
                 ) { progress ->
                     ContinueWatchingCard(
                         donghua = progress.donghua,
-                        episode = progress.lastEpisode!!,
+                        episode = progress.lastEpisode ?: return@items,
                         progress = progress.progress,
                         timestamp = progress.lastWatchedAt,
                         onClick = {

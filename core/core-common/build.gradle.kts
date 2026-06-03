@@ -29,6 +29,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines)
 
+    // Project modules
+    implementation(project(":core:core-model"))
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.junit)

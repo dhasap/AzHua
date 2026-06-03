@@ -32,7 +32,13 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-    implementation(libs.hilt.navigation.compose)
+
+    // Gson
+    implementation(libs.retrofit.gson)
+
+    // Project modules
+    implementation(project(":core:core-model"))
+    implementation(project(":core:core-database"))
 
     // Testing
     testImplementation(libs.junit)

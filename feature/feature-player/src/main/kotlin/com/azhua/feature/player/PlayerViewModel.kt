@@ -19,8 +19,9 @@ class PlayerViewModel @Inject constructor(
     private val episodeRepository: EpisodeRepository,
 ) : ViewModel() {
 
-    private val donghuaId: Long = savedStateHandle["donghuaId"] ?: 0L
-    private val episodeId: Long = savedStateHandle["episodeId"] ?: 0L
+    // Keys match PlayerActivity intent extras
+    private val donghuaId: Long = savedStateHandle["extra_donghua_id"] ?: 0L
+    private val episodeId: Long = savedStateHandle["extra_episode_id"] ?: 0L
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -28,22 +29,26 @@ class PlayerViewModel @Inject constructor(
     private var controlsHideJob: Job? = null
 
     init {
-        loadData()
+        if (donghuaId > 0) {
+            loadData()
+        }
     }
 
     private fun loadData() {
         viewModelScope.launch {
-            donghuaRepository.getDonghuaById(donghuaId).firstOrNull()?.let { donghua ->
-                _uiState.update { it.copy(donghua = donghua) }
+            donghuaRepository.getDonghuaById(donghuaId).collect { donghua ->
+                donghua?.let {
+                    _uiState.update { state -> state.copy(donghua = it) }
+                }
             }
         }
         viewModelScope.launch {
             episodeRepository.getEpisodesByDonghua(donghuaId).collect { episodes ->
                 _uiState.update { it.copy(episodeList = episodes) }
-                val current = episodes.find { it.id == episodeId }
+                val current = episodes.find { ep -> ep.id == episodeId }
                 current?.let { ep ->
-                    _uiState.update {
-                        it.copy(
+                    _uiState.update { state ->
+                        state.copy(
                             currentEpisode = ep,
                             positionMs = ep.lastWatchMs,
                             durationMs = ep.durationMs,
@@ -119,7 +124,6 @@ class PlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        // Save watch progress
         val state = _uiState.value
         if (state.currentEpisode != null && state.positionMs > 0) {
             viewModelScope.launch {
