@@ -2,14 +2,25 @@ package com.azhua.core.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.azhua.core.ui.R
 
-// Font families — will be populated with actual font files
-// For now, use default as placeholder
-val NotoSerifSC = FontFamily.Default
-val Inter = FontFamily.Default
+val NotoSerifSC = FontFamily(
+    Font(R.font.noto_serif_sc_regular, FontWeight.Normal),
+    Font(R.font.noto_serif_sc_medium, FontWeight.Medium),
+    Font(R.font.noto_serif_sc_semibold, FontWeight.SemiBold),
+    Font(R.font.noto_serif_sc_bold, FontWeight.Bold),
+)
+
+val Inter = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+    Font(R.font.inter_bold, FontWeight.Bold),
+)
 
 val AzHuaTypography = Typography(
     displayLarge = TextStyle(
